@@ -19,6 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "License :: OSI Approved :: MIT License",
     "Topic :: Text Processing :: Linguistic",
 ]
@@ -35,7 +36,7 @@ Homepage = "https://stxqq.github.io/bytepair/"
 Source = "https://github.com/Stxqq/bytepair"
 
 [tool.hatch.build.targets.sdist]
-include = ["bytepair", "tests", "README.md", "LICENSE"]
+include = ["bytepair", "tests", "examples/alice.txt", "README.md", "LICENSE"]
 
 [tool.ruff]
 line-length = 88

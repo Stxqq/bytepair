@@ -13,7 +13,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: pip install ruff
+      - run: pip install ruff==0.16.9
       - run: ruff check .
       - run: ruff format --check .
 
@@ -22,17 +22,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/bytepair
-          key: cl100k-base
       - run: pip install -e ".[dev,tiktoken]"
       - run: pytest -q
 
@@ -43,6 +39,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+      # the only job that downloads cl100k_base itself
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/bytepair
+          key: cl100k-base
       - run: pip install -e ".[dev]"
       - run: pytest -q
       - name: GPT4Tokenizer from the verified download
