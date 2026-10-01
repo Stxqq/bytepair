@@ -70,6 +70,18 @@ def test_matches_tiktoken(gpt4, reference, alice):
         assert gpt4.decode(expected) == reference.decode(expected)
 
 
+def test_long_chunks_match_tiktoken(gpt4, reference):
+    rng = random.Random(1)
+    texts = [
+        "".join(rng.choice("abcdefghijklmnopqrstuvwxyzAB") for _ in range(20_000)),
+        "".join(chr(rng.randint(0x4E00, 0x4FFF)) for _ in range(3_000)),
+        " " * 5_000 + "x",
+        "9" * 2_000,
+    ]
+    for text in texts:
+        assert gpt4.encode_ordinary(text) == reference.encode_ordinary(text)
+
+
 def test_matches_tiktoken_with_special_tokens(gpt4, reference):
     text = "<|endoftext|>hello<|fim_prefix|>def f():<|fim_suffix|> x<|endofprompt|>"
     ids = gpt4.encode(text, allowed_special="all")

@@ -3,6 +3,7 @@ from samples import EDGE_CASES
 
 from bytepair import BasicTokenizer, RegexTokenizer
 from bytepair.base import render_token
+from bytepair.pairs import merge_pair
 
 SENTENCES = (
     "the cat sat on the mat. the dog sat on the log. "
@@ -100,6 +101,28 @@ def test_cache_does_not_change_results(trained):
     assert tok.encode(text) == first
     tok._cache.clear()
     assert tok.encode(text) == first
+
+
+def rescan_encode(tok, text):
+    """BPE the slow, obvious way: merge the lowest-ranked pair until none is left."""
+    ids = []
+    for chunk in tok.split(text):
+        part = [tok.byte_ids[b] for b in chunk.encode("utf-8")]
+        while len(part) > 1:
+            pair = min(zip(part, part[1:]), key=lambda p: tok.merges.get(p, 1e9))
+            if pair not in tok.merges:
+                break
+            part = merge_pair(part, pair, tok.merges[pair])
+        ids += part
+    return ids
+
+
+@pytest.mark.parametrize("kind", ["basic", "gpt4"])
+def test_encoder_matches_rescanning_reference(kind, alice):
+    tok = make(kind)
+    tok.train(alice[:30_000], 600)
+    text = alice[40_000:44_000]
+    assert tok.encode(text) == rescan_encode(tok, text)
 
 
 def test_render_token():
