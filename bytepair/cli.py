@@ -1,5 +1,3 @@
-"""Command line interface: ``bytepair train | encode | decode | inspect``."""
-
 from __future__ import annotations
 
 import argparse
@@ -13,7 +11,7 @@ from .tokenizers import BasicTokenizer, RegexTokenizer, load
 
 PRETRAINED = ("cl100k_base", "gpt4")
 
-# The portfolio's note colors as (fill, ink).
+# (fill, ink) pairs, the same pastels as the playground's .c0-.c5 token chips.
 PASTELS = [
     ((0xFD, 0xE6, 0x8A), (0x78, 0x35, 0x0F)),
     ((0xBA, 0xE6, 0xFD), (0x0C, 0x4A, 0x6E)),
@@ -30,11 +28,14 @@ def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
         return args.run(args)
+    except BrokenPipeError:
+        # `| head` closed the pipe, which is not an error. Point stdout at
+        # devnull so the flush at exit does not raise all over again.
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        return 0
     except (ValueError, OSError) as err:
         print(f"bytepair: {err}", file=sys.stderr)
         return 1
-    except BrokenPipeError:
-        return 0
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -120,7 +121,7 @@ def _train(args) -> int:
             a, b = (render_token(learned[i]) for i in pair)
             line = f"merge {done:>{width}}/{num_merges}  [{a}] [{b}]  x{count}"
             print(f"\r\x1b[2K{line}", end="", file=sys.stderr, flush=True)
-        elif done % 500 == 0:
+        elif not live and done % 500 == 0:
             print(f"merge {done}/{num_merges}", file=sys.stderr)
 
     start = time.perf_counter()
