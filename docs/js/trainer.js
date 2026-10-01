@@ -110,19 +110,24 @@ export function encodeWithMerges(text, merges) {
       }
       if (best === Infinity) break;
       const [a, b] = merges[best - 256];
-      const merged = [];
-      for (let i = 0; i < ids.length; ) {
-        if (ids[i] === a && ids[i + 1] === b) {
-          merged.push(best);
-          i += 2;
-        } else {
-          merged.push(ids[i++]);
-        }
-      }
-      ids = merged;
+      ids = mergePair(ids, a, b, best);
     }
     return ids;
   });
+}
+
+/** Replace every non-overlapping a, b in ids with id, left to right. */
+export function mergePair(ids, a, b, id) {
+  const merged = [];
+  for (let i = 0; i < ids.length; ) {
+    if (ids[i] === a && ids[i + 1] === b) {
+      merged.push(id);
+      i += 2;
+    } else {
+      merged.push(ids[i++]);
+    }
+  }
+  return merged;
 }
 
 // Max-heap on (count, then smallest pair). Entries go stale when a count

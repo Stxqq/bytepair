@@ -2,7 +2,7 @@
 // the real encoder, so every number on it is what the code actually does.
 import { drawToken, mini } from "./glyphs.js";
 import { splitGpt4 } from "./split.js";
-import { chunkCounts, trainBpe } from "./trainer.js";
+import { chunkCounts, mergePair, trainBpe } from "./trainer.js";
 
 const SENTENCE = "I'm tokenizing naïve text in 2026.";
 const fmt = new Intl.NumberFormat("en-US");
@@ -164,22 +164,9 @@ function trainingTile() {
     learned.push({ id, pair, count });
   });
 
-  // replay the merges on the string to show each intermediate state
   let ids = Array.from(utf8.encode(text));
   const states = [{ ids }];
-  for (const { id, pair: [a, b] } of learned) {
-    const merged = [];
-    for (let i = 0; i < ids.length; i++) {
-      if (ids[i] === a && ids[i + 1] === b) {
-        merged.push(id);
-        i++;
-      } else {
-        merged.push(ids[i]);
-      }
-    }
-    ids = merged;
-    states.push({ ids });
-  }
+  for (const { id, pair: [a, b] } of learned) states.push({ ids: (ids = mergePair(ids, a, b, id)) });
 
   const box = el("div", "train-rows");
   const rows = states.map((state) => {
