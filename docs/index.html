@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>bytepair · tokenizer playground</title>
+  <meta name="description" content="GPT-4's tokenizer running in your browser, token for token identical to tiktoken. Hover any token to see the merges that built it, or train your own byte-pair vocabulary and watch it grow.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://stxqq.github.io/bytepair/">
+  <meta property="og:title" content="bytepair · tokenizer playground">
+  <meta property="og:description" content="GPT-4's cl100k_base in the browser, and a BPE trainer you can watch merge by merge.">
+  <meta property="og:image" content="https://stxqq.github.io/bytepair/social.png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="bytepair · tokenizer playground">
+  <meta name="twitter:description" content="GPT-4's cl100k_base in the browser, and a BPE trainer you can watch merge by merge.">
+  <meta name="twitter:image" content="https://stxqq.github.io/bytepair/social.png">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23fff'/%3E%3Crect x='5' y='11' width='10' height='10' rx='3' fill='%23111113'/%3E%3Crect x='17' y='11' width='10' height='10' rx='3' fill='%23111113'/%3E%3Crect x='12' y='14.5' width='8' height='3' fill='%23111113'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://rsms.me/">
+  <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preload" href="data/cl100k_base.bin.gz" as="fetch" crossorigin>
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <nav class="pill" aria-label="Views">
+    <span class="pill-ind" aria-hidden="true"></span>
+    <a class="pill-btn" href="#gpt4" data-view="gpt4">GPT-4</a>
+    <a class="pill-btn" href="#train" data-view="train">Train</a>
+    <a class="pill-btn" href="#how" data-view="how">How it works</a>
+  </nav>
+
+  <main>
+    <section class="view" id="view-gpt4" data-view="gpt4" aria-label="GPT-4 tokenizer">
+      <div class="intro">
+        <p class="dear">Models read numbers,</p>
+        <p class="gray">
+          not text. This is GPT-4's tokenizer, cl100k_base, running in your
+          browser with the same split and the same merges as tiktoken. Type
+          anything, then hover a token to see how it was built.
+        </p>
+      </div>
+
+      <div class="stage">
+        <div class="tile play">
+          <div class="card editor">
+            <textarea id="play-input" rows="3" spellcheck="false" aria-label="Text to tokenize"></textarea>
+            <div class="editor-foot">
+              <div class="samples" role="group" aria-label="Examples">
+                <button type="button" class="chip" data-sample="prose">Prose</button>
+                <button type="button" class="chip" data-sample="code">Code</button>
+                <button type="button" class="chip" data-sample="numbers">Numbers</button>
+                <button type="button" class="chip" data-sample="world">Languages</button>
+                <button type="button" class="chip" data-sample="emoji">Emoji</button>
+              </div>
+              <div class="toggle" role="group" aria-label="Show">
+                <button type="button" class="chip on" data-show="text" aria-pressed="true">Text</button>
+                <button type="button" class="chip" data-show="ids" aria-pressed="false">Ids</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tokens-wrap">
+            <div class="tokens" id="play-tokens" tabindex="0" aria-label="Tokens. Use the arrow keys to step through them." aria-describedby="play-status">
+              <p class="loading">Loading cl100k_base<span class="mono">456 KB</span></p>
+            </div>
+            <div class="callout" id="play-callout" aria-hidden="true">
+              <div class="co-dim"><i></i><b></b><i></i></div>
+              <i class="co-dot"></i>
+              <i class="co-line"></i>
+              <div class="co-card"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="below">
+          <div class="caption">
+            <h2>cl100k_base</h2>
+            <p>GPT-4 · 100,256 tokens · runs locally</p>
+          </div>
+          <dl class="stats">
+            <div><dt>Tokens</dt><dd><b data-stat="tokens">0</b></dd></div>
+            <div><dt>Characters</dt><dd><b data-stat="chars">0</b></dd></div>
+            <div><dt>Bytes</dt><dd><b data-stat="bytes">0</b></dd></div>
+            <div><dt>Per token</dt><dd><b data-stat="ratio">0</b><span>chars</span></dd></div>
+          </dl>
+        </div>
+        <p class="sr-only" id="play-status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section class="view" id="view-train" data-view="train" aria-label="Train a tokenizer" hidden>
+      <div class="intro">
+        <p class="dear">Learn a vocabulary,</p>
+        <p class="gray">
+          from any text you paste. Every merge joins the most frequent pair of
+          neighbouring tokens into a new one. Watch the sample re-segment as
+          the vocabulary grows.
+        </p>
+      </div>
+
+      <div class="stage">
+        <div class="tile train">
+          <div class="train-grid">
+            <div class="card editor corpus">
+              <textarea id="train-input" spellcheck="false" aria-label="Training text"></textarea>
+              <div class="editor-foot">
+                <span class="mono-note" id="train-size"></span>
+                <button type="button" class="chip" id="train-reset">Alice in Wonderland</button>
+              </div>
+            </div>
+            <div class="vocab">
+              <div class="vocab-head">
+                <span class="spec">Merges</span>
+                <span class="mono-note"><span id="vocab-count">0</span> learned</span>
+              </div>
+              <ol class="vocab-list" id="vocab-list" aria-live="off"></ol>
+              <p class="vocab-empty" id="vocab-empty">256 byte tokens. Nothing merged yet.</p>
+            </div>
+          </div>
+
+          <div class="train-bar">
+            <label class="range">
+              <span class="spec">Merges</span>
+              <input type="range" id="train-merges" min="32" max="2048" step="32" value="512">
+              <output class="mono" id="train-merges-out" for="train-merges">512</output>
+            </label>
+            <div class="train-actions">
+              <button type="button" class="btn quiet" id="train-skip" hidden>Skip to end</button>
+              <button type="button" class="btn" id="train-go">Train</button>
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <h2>Byte-level BPE</h2>
+          <p id="train-caption">GPT-4 split · incremental pair counts · in a Web Worker</p>
+        </div>
+
+        <div class="tile sample">
+          <div class="sample-head">
+            <span class="spec">Sample</span>
+            <input id="sample-input" spellcheck="false" aria-label="Sample sentence">
+          </div>
+          <div class="tokens sample-tokens" id="sample-tokens" aria-label="Sample, as the trained tokenizer splits it"></div>
+        </div>
+        <div class="below">
+          <div class="caption">
+            <h2>The sample, re-encoded</h2>
+            <p>After every merge</p>
+          </div>
+          <dl class="stats">
+            <div><dt>Vocabulary</dt><dd><b data-stat="vocab">256</b></dd></div>
+            <div><dt>Tokens</dt><dd><b data-stat="sample-tokens">0</b></dd></div>
+            <div><dt>Per token</dt><dd><b data-stat="sample-ratio">0</b><span>chars</span></dd></div>
+          </dl>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-how" data-view="how" aria-label="How it works" hidden>
+      <div class="intro">
+        <p class="dear">Four steps,</p>
+        <p class="gray">
+          from text to ids. A regex cuts the text into chunks, each chunk
+          becomes UTF-8 bytes, the bytes are merged in the order the merges
+          were learned, and what is left is read off as ids. Hover a tile for
+          its spec sheet.
+        </p>
+      </div>
+      <div class="feed" id="how-feed"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="f-block">
+      <p class="f-label">Source</p>
+      <a class="f-value" href="https://github.com/Stxqq/bytepair">github.com/Stxqq/bytepair</a>
+    </div>
+    <div class="f-block">
+      <p class="f-label">Python</p>
+      <p class="f-value">The package behind this page: training, GPT-4 encoding and a CLI, with tests against tiktoken.</p>
+    </div>
+    <div class="f-block">
+      <p class="f-label">After</p>
+      <a class="f-value" href="https://www.youtube.com/watch?v=zduSFxRajkE">Andrej Karpathy, Let's build the GPT Tokenizer</a>
+    </div>
+    <div class="f-block">
+      <p class="f-label">License</p>
+      <a class="f-value" href="https://github.com/Stxqq/bytepair/blob/main/LICENSE">MIT</a>
+    </div>
+    <div class="f-block">
+      <p class="f-label">Built by</p>
+      <a class="f-value" href="https://github.com/Stxqq">Stefan Carapic</a>
+    </div>
+  </footer>
+</body>
+</html>
