@@ -14,6 +14,15 @@ A byte-level BPE tokenizer in plain Python, under 1,000 lines, that reproduces G
   <img alt="tiktoken compatible" src="https://img.shields.io/badge/cl100k__base-tiktoken--identical-BBF7D0?style=flat&labelColor=111113">
 </p>
 
+<p align="center">
+  <a href="https://stxqq.github.io/bytepair/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset=".github/assets/launch-dark.png">
+      <img src=".github/assets/launch-light.png" alt="Open the live demo" width="300">
+    </picture>
+  </a>
+</p>
+
 ## What it is
 
 `bytepair` implements the byte-level BPE that GPT-2 and GPT-4 use, as three
