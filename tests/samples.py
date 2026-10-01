@@ -1,0 +1,27 @@
+# Strings that tend to break tokenizers: multi-byte scripts, emoji with ZWJ and
+# skin tones, combining marks, odd whitespace, code, and lone control bytes.
+EDGE_CASES = [
+    "",
+    "a",
+    " ",
+    "hello world",
+    "Hello, World! How's it going? I'm fine, they've said.",
+    "    leading and trailing spaces    ",
+    "tabs\tand\nnewlines\r\nand\r\rcarriage returns\n\n\n",
+    " non-breaking em-space　ideographic space",
+    "naïve café résumé coöperate",
+    "é combining acute vs é precomposed",
+    "Привет, мир! Γειά σου Κόσμε",
+    "こんにちは世界、東京タワー。",
+    "안녕하세요 세계",
+    "مرحبا بالعالم שלום עולם",
+    "👋🌍 👨‍👩‍👧‍👦 👍🏽 🏳️‍🌈 🇩🇪",
+    "𝔘𝔫𝔦𝔠𝔬𝔡𝔢 math 𝟙𝟚𝟛 and ∑ ∫ √ ≠ ≤",
+    "1234567890 3.14159 1e-9 0xFF -42 1,000,000",
+    "def f(x):\n    return {'a': [1, 2, 3]}  # comment\n",
+    "for (int i = 0; i < n; ++i) { s += a[i]; }",
+    '<html><body class="x">&amp;&lt;</body></html>',
+    "\x00\x01\x1f\x7f control bytes",
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "THE QUICK BROWN FOX'S JUMP DIDN'T REALLY HAPPEN, DID IT'S",
+]
