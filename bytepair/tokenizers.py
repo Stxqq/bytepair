@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import regex
 
 from .base import Tokenizer
+from .modelfile import parse_model
 from .patterns import NAMED_PATTERNS
 
 
@@ -23,3 +26,14 @@ class RegexTokenizer(Tokenizer):
 
     def split(self, text: str) -> list[str]:
         return self._splitter.findall(text)
+
+
+def load(path: str | Path) -> Tokenizer:
+    """Load a tokenizer written by ``Tokenizer.save``."""
+    spec = parse_model(Path(path).read_text(encoding="utf-8"))
+    tok = BasicTokenizer() if spec.pattern is None else RegexTokenizer(spec.pattern)
+    tok.byte_ids = spec.byte_ids
+    tok.merges = {pair: 256 + i for i, pair in enumerate(spec.merges)}
+    tok.special_tokens = spec.special_tokens
+    tok._refresh()
+    return tok

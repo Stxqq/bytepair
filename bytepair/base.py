@@ -6,10 +6,12 @@ from __future__ import annotations
 import unicodedata
 from collections import Counter
 from collections.abc import Collection, Iterable
+from pathlib import Path
 from typing import Literal
 
 import regex
 
+from .modelfile import ModelSpec, dump_model
 from .pairs import Pair, merge_pair
 from .train import OnMerge, train_bpe
 
@@ -25,6 +27,7 @@ class Tokenizer:
     is always applied first.
     """
 
+    pattern: str | None = None
     cache_size = 1 << 16
     _cacheable_chunk = 256
 
@@ -106,6 +109,38 @@ class Tokenizer:
     def decode(self, ids: Iterable[int], errors: str = "replace") -> str:
         """Decode ids to text. Partial UTF-8 sequences become U+FFFD by default."""
         return self.decode_bytes(ids).decode("utf-8", errors=errors)
+
+    def save(self, prefix: str | Path) -> Path:
+        """Write ``prefix.model`` (loadable) and ``prefix.vocab`` (readable)."""
+        merge_ids = list(self.merges.values())
+        if merge_ids != list(range(256, 256 + len(merge_ids))):
+            raise ValueError("merged token ids must run contiguously from 256")
+        spec = ModelSpec(
+            pattern=self.pattern,
+            byte_ids=self.byte_ids,
+            special_tokens=self.special_tokens,
+            merges=list(self.merges),
+        )
+        model_path = Path(f"{prefix}.model")
+        model_path.parent.mkdir(parents=True, exist_ok=True)
+        model_path.write_text(dump_model(spec), encoding="utf-8")
+        Path(f"{prefix}.vocab").write_text(self._vocab_listing(), encoding="utf-8")
+        return model_path
+
+    def _vocab_listing(self) -> str:
+        parents = {new_id: pair for pair, new_id in self.merges.items()}
+        lines = []
+        for token_id in sorted(self.vocab):
+            token = f"[{render_token(self.vocab[token_id])}]"
+            if token_id in parents:
+                a, b = parents[token_id]
+                left = render_token(self.vocab[a])
+                right = render_token(self.vocab[b])
+                token = f"[{left}] [{right}] -> {token}"
+            lines.append(f"{token_id:>6}  {token}")
+        for name, token_id in sorted(self.special_tokens.items(), key=lambda t: t[1]):
+            lines.append(f"{token_id:>6}  {name}  special")
+        return "\n".join(lines) + "\n"
 
     def _allowed_special(self, allowed_special, text) -> dict[str, int]:
         if allowed_special == "all":

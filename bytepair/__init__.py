@@ -2,7 +2,7 @@
 
 from .base import Tokenizer
 from .patterns import GPT2_SPLIT_PATTERN, GPT4_SPLIT_PATTERN
-from .tokenizers import BasicTokenizer, RegexTokenizer
+from .tokenizers import BasicTokenizer, RegexTokenizer, load
 
 __all__ = [
     "BasicTokenizer",
@@ -10,5 +10,6 @@ __all__ = [
     "GPT4_SPLIT_PATTERN",
     "RegexTokenizer",
     "Tokenizer",
+    "load",
 ]
 __version__ = "0.1.0"
