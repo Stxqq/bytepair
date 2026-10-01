@@ -82,6 +82,12 @@ def test_long_chunks_match_tiktoken(gpt4, reference):
         assert gpt4.encode_ordinary(text) == reference.encode_ordinary(text)
 
 
+def test_lone_surrogates_become_replacement_chars(gpt4, reference):
+    for text in ["a\ud83dx", "\udc00", "x\ud83d\ude00y"]:
+        assert gpt4.encode_ordinary(text) == reference.encode_ordinary(text)
+    assert gpt4.encode("a\ud83dx") == [64, 5809, 87]
+
+
 def test_matches_tiktoken_with_special_tokens(gpt4, reference):
     text = "<|endoftext|>hello<|fim_prefix|>def f():<|fim_suffix|> x<|endofprompt|>"
     ids = gpt4.encode(text, allowed_special="all")

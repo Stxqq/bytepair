@@ -96,6 +96,12 @@ class Tokenizer:
 
     def encode_ordinary(self, text: str) -> list[int]:
         """Encode text, treating special token strings as plain text."""
+        try:
+            text.encode("utf-8")
+        except UnicodeEncodeError:
+            # Lone surrogates, e.g. from JSON with half an escaped pair. tiktoken
+            # turns them into U+FFFD, and so does the browser's TextEncoder.
+            text = text.encode("utf-16", "surrogatepass").decode("utf-16", "replace")
         ids: list[int] = []
         for chunk in self.split(text):
             ids.extend(self._encode_chunk(chunk))
