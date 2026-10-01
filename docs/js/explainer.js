@@ -25,6 +25,9 @@ export function mountExplainer(section, encoderReady) {
     );
     built = true;
     if (!section.hidden) layout();
+  }, (error) => {
+    feed.textContent = `Could not load cl100k_base: ${error.message}`;
+    feed.classList.add("failed");
   });
   addEventListener("resize", () => {
     if (built && !section.hidden) layout();
@@ -49,12 +52,12 @@ function splitTile() {
   const find = (test) => pieces[chunks.findIndex(test)];
   return tile({
     title: "Split",
-    subtitle: "Step 1 · regex pre-split",
+    subtitle: "Regex pre-split",
     object: line,
     dims: { top: `${SENTENCE.length} chars`, bottom: `${chunks.length} chunks` },
     notes: [
-      { side: "left", target: find((c) => c === "'m"), name: "Contraction", text: "'s 'm 'll 've split off" },
-      { side: "right", target: find((c) => c.startsWith(" tok")), name: "Word", text: "The space joins the word after it" },
+      { side: "left", target: find((c) => c === "'m"), name: "Contraction", text: "'s 'm 'll split off" },
+      { side: "right", target: find((c) => c.startsWith(" tok")), name: "Word", text: "Space joins the next word" },
       { side: "left", target: find((c) => /^\d+$/.test(c)), name: "Digits", text: "At most three per chunk" },
       { side: "right", target: find((c) => c === "."), name: "Symbols", text: "Merges never cross a chunk" },
     ],
@@ -78,14 +81,14 @@ function bytesTile() {
   const total = utf8.encode(chunk).length;
   return tile({
     title: "UTF-8 bytes",
-    subtitle: "Step 2 · every chunk becomes bytes",
+    subtitle: "Every chunk becomes bytes",
     object: grid,
     dims: { top: `${[...chunk].length} chars`, side: `${total} B` },
     notes: [
       { side: "left", target: rows[0], name: "Space", text: "U+0020 is the byte 20" },
       { side: "right", target: rows[3], name: "Two bytes", text: "ï is c3 af in UTF-8" },
       { side: "left", target: rows[1], name: "Letters", text: "a to z take one byte each" },
-      { side: "right", target: rows[5], name: "Base", text: "256 byte tokens: no input is unknown" },
+      { side: "right", target: rows[5], name: "Base", text: "256 byte tokens, nothing unknown" },
     ],
   });
 }
@@ -113,12 +116,12 @@ function mergesTile(encoder) {
   const merges = states.length - 1;
   return tile({
     title: "Merges",
-    subtitle: "Step 3 · lowest rank first, until nothing merges",
+    subtitle: "Lowest rank first, until nothing merges",
     object: steps,
     dims: { top: `${chunk.length} bytes`, side: `${merges} merges` },
     notes: [
       { side: "left", target: rows[0], name: "Bytes", text: "Start from single bytes" },
-      { side: "right", target: rows[1], name: "Lowest rank", text: "The pair learned first goes first" },
+      { side: "right", target: rows[1], name: "Rank", text: "The pair learned first goes first" },
       { side: "left", target: rows[Math.floor(merges / 2)], name: "One pair", text: "Each step joins two neighbours" },
       { side: "right", target: rows[merges], name: "Done", text: "No ranked pair left, so stop" },
     ],
@@ -143,7 +146,7 @@ function idsTile(encoder) {
   const naive = tokens.findIndex((t) => t.bytes.startsWith(" na"));
   return tile({
     title: "Ids",
-    subtitle: "Step 4 · what the model actually sees",
+    subtitle: "What the model actually sees",
     object: line,
     dims: { top: `${utf8.encode(SENTENCE).length} bytes`, bottom: `${tokens.length} tokens` },
     notes: [
@@ -223,7 +226,10 @@ function tile({ title, subtitle, object, dims, notes, caption }) {
     list.append(item);
   });
 
-  frame.append(body, keylines, list);
+  // the box keeps the keylines on the object when the notes become a list below it
+  const box = el("div", "anno-box");
+  box.append(body, keylines);
+  frame.append(box, list);
   stage.append(frame, el("div", "anno-hint", "Hover for the spec sheet"));
   const text = el("div", "caption");
   text.append(el("h2", "", title), el("p", "", subtitle));

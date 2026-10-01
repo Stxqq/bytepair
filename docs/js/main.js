@@ -16,6 +16,7 @@ const views = {
 };
 
 const pill = document.querySelector(".pill");
+const indicator = pill.querySelector(".pill-ind");
 const links = [...pill.querySelectorAll(".pill-btn")];
 let current = null;
 let swap = 0;
@@ -26,14 +27,11 @@ function show(name) {
   const previous = current && sections[current];
   current = name;
 
-  links.forEach((link, i) => {
-    if (link.dataset.view === name) {
-      link.setAttribute("aria-current", "page");
-      pill.style.setProperty("--at", i);
-    } else {
-      link.removeAttribute("aria-current");
-    }
+  links.forEach((link) => {
+    if (link.dataset.view === name) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
   });
+  placeIndicator();
 
   const enter = () => {
     for (const section of Object.values(sections)) {
@@ -45,7 +43,12 @@ function show(name) {
     scrollTo({ top: 0, behavior: "instant" });
     views[name].shown?.();
     // two frames: the first one lays out the start state, the second animates
-    requestAnimationFrame(() => requestAnimationFrame(() => next.classList.remove("enter")));
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        next.classList.remove("enter");
+        document.body.classList.remove("swapping");
+      }),
+    );
   };
 
   clearTimeout(swap);
@@ -53,9 +56,25 @@ function show(name) {
     enter();
   } else {
     previous.classList.add("leave");
-    swap = setTimeout(enter, 300);
+    // the footer would jump when the sections swap heights, so it fades too
+    document.body.classList.add("swapping");
+    swap = setTimeout(enter, 200);
   }
 }
+
+// The indicator takes the size of the label under it, so short and long
+// labels sit in it with the same air.
+function placeIndicator() {
+  const link = pill.querySelector('[aria-current="page"]');
+  if (!link) return;
+  indicator.style.width = `${link.offsetWidth}px`;
+  indicator.style.transform = `translateX(${link.offsetLeft - 7}px)`;
+  // no glide on the very first placement
+  requestAnimationFrame(() => pill.classList.add("ready"));
+}
+
+addEventListener("resize", placeIndicator);
+document.fonts?.ready.then(placeIndicator);
 
 addEventListener("hashchange", () => show(location.hash.slice(1)));
 show(location.hash.slice(1));
