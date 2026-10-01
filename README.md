@@ -3,7 +3,7 @@
 A byte-level BPE tokenizer in plain Python, under 1,000 lines, that reproduces GPT-4's `cl100k_base` ids exactly.
 
 <p align="center">
-  <img src=".github/assets/hero.gif" width="880" alt="Hovering tokens in the GPT-4 playground, then training a vocabulary on Alice in Wonderland">
+  <img src=".github/assets/hero.gif" width="880" alt="Typing a sentence into the playground: GPT-4 tokens appear as you type, hovering one shows its id, bytes, rank and merge tree">
 </p>
 
 <p align="center">
@@ -32,18 +32,16 @@ text. The package is under 1,000 lines including the CLI, with one dependency
 
 ## How it works
 
-```
- "Hello world!"
-       |  split (GPT-4 pattern)
-       v
- ["Hello", " world", "!"]                 each chunk is cached after its first encode
-       |  utf-8
-       v
- [72 101 108 108 111] [32 119 ...] [33]   256 byte tokens
-       |  merge loop: apply the lowest-ranked pair present, until none is left
-       v
- [9906] [1917] [0]                        ids, identical to tiktoken
-```
+<p align="center">
+  <img src=".github/assets/how-it-works.png" width="880" alt="'Tokenizers read bytes, not words.' split into 7 chunks, turned into 33 UTF-8 bytes, merged by rank (' bytes' takes five merges) and read off as 8 cl100k_base ids">
+</p>
+
+Encoding is four steps. The GPT-4 regex cuts text into chunks (words with their
+leading space, numbers of up to three digits, punctuation runs), so a merge
+never crosses a chunk boundary. Each chunk becomes UTF-8 bytes, which are the
+256 base tokens. Inside a chunk, the pair with the lowest rank is merged until
+no adjacent pair has a rank left, and the remaining tokens are read off as ids.
+Every chunk is cached after its first encode.
 
 ### Training
 
@@ -168,8 +166,10 @@ Chrome). How it works walks through split, bytes, merges and ids, drawn from
 the live encoder.
 
 <p align="center">
-  <img src=".github/assets/playground.png" width="49%" alt="The token ' separate' with its id, bytes, rank and merge tree">
-  <img src=".github/assets/merges.png" width="34%" alt="Spec sheet of the merges that turn ' tokenizing' into two tokens">
+  <img src=".github/assets/playground.png" width="720" alt="The token ' separate' with its id, bytes, rank and merge tree">
+</p>
+<p align="center">
+  <img src=".github/assets/train.png" width="720" alt="The Train tab after 512 merges on Alice in Wonderland: the newest merges, and the sample sentence re-encoded with the learned vocabulary">
 </p>
 
 The page is plain HTML and ES modules in [`docs/`](docs). The 100,256 ranks
