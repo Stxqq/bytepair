@@ -43,6 +43,8 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
+# zip(ids, ids[1:]) is deliberately uneven
+ignore = ["B905"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
