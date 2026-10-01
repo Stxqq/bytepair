@@ -216,7 +216,7 @@ function tile({ title, subtitle, object, dims, notes, caption }) {
 
   const list = el("div", "anno-items");
   notes.forEach((note, i) => {
-    const item = el("div", `anno-item ai-${note.side}`);
+    const item = el("div", `anno-item note-${note.side}`);
     const label = el("div", "anno-label");
     label.append(el("em", "", String(i + 1).padStart(2, "0")), el("b", "", note.name), el("span", "", note.text));
     const parts = [el("i", "anno-line"), el("i", "anno-dot")];
@@ -243,7 +243,7 @@ function tile({ title, subtitle, object, dims, notes, caption }) {
 function placeNotes(frame) {
   const top = frame.getBoundingClientRect().top;
   for (const side of ["left", "right"]) {
-    const items = [...frame.querySelectorAll(`.ai-${side}`)]
+    const items = [...frame.querySelectorAll(`.note-${side}`)]
       .map((item) => {
         const r = item.target.getBoundingClientRect();
         return { item, y: r.top - top + r.height / 2, half: item.offsetHeight / 2 };
