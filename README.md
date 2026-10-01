@@ -21,6 +21,14 @@ A byte-level BPE tokenizer in plain Python, under 1,000 lines, that reproduces G
       <img src=".github/assets/launch-light.png" alt="Open the live demo" width="300">
     </picture>
   </a>
+  <a href="https://github.com/Stxqq/bytepair">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset=".github/assets/star-dark.png">
+      <img src=".github/assets/star-light.png" alt="Star on GitHub" width="260">
+    </picture>
+  </a>
+  <br />
+  <sub>If you found it useful, a star helps more people find it.</sub>
 </p>
 
 ## What it is
