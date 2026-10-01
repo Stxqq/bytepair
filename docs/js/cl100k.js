@@ -101,7 +101,8 @@ export class Cl100k {
 
   // tiktoken's byte_pair_merge: keep the boundaries between parts and join
   // the adjacent pair whose concatenation has the lowest rank, leftmost first.
-  mergeBytes(piece, maxRank = Infinity) {
+  // onStep(bounds, rank) lets the explainer watch the loop.
+  mergeBytes(piece, maxRank = Infinity, onStep) {
     const whole = this.ranks.get(piece);
     if (whole !== undefined && whole < maxRank) return [whole];
     const bounds = Array.from({ length: piece.length + 1 }, (_, i) => i);
@@ -117,6 +118,7 @@ export class Cl100k {
       }
       if (at < 0) break;
       bounds.splice(at + 1, 1);
+      onStep?.(bounds, best);
     }
     const ids = [];
     for (let i = 0; i < bounds.length - 1; i++) {
