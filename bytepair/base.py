@@ -86,7 +86,7 @@ class Tokenizer:
         parts = regex.split("(" + "|".join(map(regex.escape, names)) + ")", text)
         ids: list[int] = []
         for i, part in enumerate(parts):
-            # re.split with one capture group alternates text, special, text...
+            # splitting on a capture group alternates text, special, text, ...
             if i % 2:
                 ids.append(allowed[part])
             else:
