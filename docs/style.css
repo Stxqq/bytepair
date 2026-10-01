@@ -293,7 +293,6 @@ main { min-height: 100vh; }
 .tree-node.root { background: var(--fill); color: var(--tint); font-weight: 600; }
 .tree-node.leaf { font-family: var(--mono); font-size: 8.5px; background: #fff; box-shadow: inset 0 0 0 1px var(--hairline); color: var(--gray); }
 .tree-node.cut { background: repeating-linear-gradient(135deg, var(--tile) 0 3px, #fff 3px 6px); }
-.tree-link { position: absolute; height: 1px; background: #d9d9de; }
 
 /* ————— stats ————— */
 .below {
@@ -577,6 +576,7 @@ a.f-value:hover { color: var(--ink); }
   .editor { padding: 14px 14px 10px; }
   .editor-foot { flex-direction: column; align-items: stretch; }
   .toggle { align-self: flex-start; }
+  .corpus .editor-foot { flex-direction: row; align-items: center; }
   .tokens { font-size: 14.5px; }
   .co-card { width: min(300px, calc(100vw - 64px)); }
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 24px; }

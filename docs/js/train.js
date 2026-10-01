@@ -23,6 +23,7 @@ export function mountTrainer(section) {
   const listEmpty = section.querySelector("#vocab-empty");
   const learnedCount = section.querySelector("#vocab-count");
   const caption = section.querySelector("#train-caption");
+  const idleCaption = caption.textContent;
   const sampleInput = section.querySelector("#sample-input");
   const sampleOut = section.querySelector("#sample-tokens");
   const stat = (name, decimals) => new Counter(section.querySelector(`[data-stat="${name}"]`), decimals);
@@ -215,7 +216,11 @@ export function mountTrainer(section) {
   }
 
   async function loadAlice() {
-    alice ??= await fetch(new URL("../data/alice.txt", import.meta.url)).then((r) => r.text());
+    if (alice === null) {
+      const book = await fetch(new URL("../data/alice.txt", import.meta.url)).then((r) => r.text());
+      // skip the title page and contents, start at the first chapter
+      alice = book.slice(Math.max(0, book.search(/^CHAPTER I\.$/m)));
+    }
     corpus.value = alice;
     const opening = alice.indexOf("Alice was beginning");
     if (opening >= 0) sampleInput.value = alice.slice(opening, alice.indexOf("\n\n", opening)).replace(/\s+/g, " ");
@@ -240,6 +245,7 @@ export function mountTrainer(section) {
     worker?.terminate();
     cancelAnimationFrame(frame);
     skip.hidden = true;
+    caption.textContent = idleCaption;
     loadAlice();
   });
 

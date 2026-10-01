@@ -6,7 +6,7 @@ import { splitGpt4 } from "./split.js";
 // Pairs are packed into one number. Ids stay far below 2^16 here and a*2^16+b
 // orders pairs the way Python orders (a, b) tuples.
 const pack = (a, b) => a * 65536 + b;
-export const unpack = (key) => [Math.floor(key / 65536), key % 65536];
+const unpack = (key) => [Math.floor(key / 65536), key % 65536];
 
 const utf8 = new TextEncoder();
 

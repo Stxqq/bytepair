@@ -25,7 +25,7 @@ function sampleSpring({ stiffness = 420, damping = 26, mass = 0.85 } = {}) {
 
 const spring = sampleSpring();
 const linearSupported = CSS.supports("animation-timing-function", "linear(0, 1)");
-export const SPRING = linearSupported
+const SPRING = linearSupported
   ? spring
   : { easing: "cubic-bezier(.22, 1, .36, 1)", duration: 650 };
 
