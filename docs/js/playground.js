@@ -81,7 +81,8 @@ export function mountPlayground(section, encoderReady) {
     stats.tokens.set(tokens.length);
     stats.chars.set(chars);
     stats.bytes.set(utf8.encode(text).length);
-    stats.ratio.set(tokens.length ? chars / tokens.length : 0);
+    if (tokens.length) stats.ratio.set(chars / tokens.length);
+    else stats.ratio.clear("—");
   }
 
   // Short text re-renders on the next frame. Past a few thousand characters a

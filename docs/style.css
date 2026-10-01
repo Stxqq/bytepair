@@ -151,17 +151,19 @@ main { min-height: 100vh; }
 .btn:disabled { opacity: .35; cursor: default; transform: none; }
 .btn.quiet { background: #fff; color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .06), 0 8px 20px -10px rgba(0, 0, 0, .2); }
 
-/* ————— editor card ————— */
+/* editor card */
 .editor { padding: 18px 20px 12px; }
 .editor textarea {
   display: block; width: 100%;
   border: 0; resize: none; outline: none;
   background: transparent;
   font-size: 16.5px; line-height: 1.55;
-  min-height: 52px;
+  max-height: min(40vh, 260px);
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 .editor textarea::placeholder { color: #c4c4ca; }
-.editor:focus-within { box-shadow: var(--card-shadow), 0 0 0 1px rgba(17, 17, 19, .1); }
+.editor:has(textarea:focus) { box-shadow: var(--card-shadow), 0 0 0 1px rgba(17, 17, 19, .1); }
 .editor-foot {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   margin-top: 12px; padding-top: 12px;
@@ -188,12 +190,14 @@ main { min-height: 100vh; }
 .loading .mono { font-size: 11px; }
 .loading::after {
   content: ""; width: 34px; height: 2px; align-self: center;
-  border-radius: 2px; background: var(--hairline);
-  background-image: linear-gradient(90deg, transparent, var(--gray), transparent);
-  background-size: 50% 100%; background-repeat: no-repeat;
-  animation: sweep 1.1s var(--ease) infinite;
+  border-radius: 2px; background: var(--gray);
+  transform-origin: left;
+  animation: breathe 1.2s var(--ease) infinite alternate;
 }
-@keyframes sweep { from { background-position: -100% 0; } to { background-position: 200% 0; } }
+@keyframes breathe {
+  from { transform: scaleX(.25); opacity: .25; }
+  to { transform: scaleX(1); opacity: .7; }
+}
 .empty { color: var(--gray); font-size: 15px; line-height: 1.6; }
 .more { display: block; margin-top: 14px; }
 

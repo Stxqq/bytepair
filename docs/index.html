@@ -7,16 +7,20 @@
   <meta name="description" content="GPT-4's tokenizer running in your browser, token for token identical to tiktoken. Hover any token to see the merges that built it, or train your own byte-pair vocabulary and watch it grow.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://stxqq.github.io/bytepair/">
+  <meta property="og:site_name" content="bytepair">
   <meta property="og:title" content="bytepair · tokenizer playground">
   <meta property="og:description" content="GPT-4's cl100k_base in the browser, and a BPE trainer you can watch merge by merge.">
   <meta property="og:image" content="https://stxqq.github.io/bytepair/social.png">
   <meta property="og:image:width" content="1280">
   <meta property="og:image:height" content="640">
+  <meta property="og:image:alt" content="GPT-4 tokens as pastel chips, one of them with a spec-sheet callout">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="bytepair · tokenizer playground">
   <meta name="twitter:description" content="GPT-4's cl100k_base in the browser, and a BPE trainer you can watch merge by merge.">
   <meta name="twitter:image" content="https://stxqq.github.io/bytepair/social.png">
   <meta name="theme-color" content="#ffffff">
+  <meta name="color-scheme" content="light">
+  <link rel="canonical" href="https://stxqq.github.io/bytepair/">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23fff'/%3E%3Crect x='5' y='11' width='10' height='10' rx='3' fill='%23111113'/%3E%3Crect x='17' y='11' width='10' height='10' rx='3' fill='%23111113'/%3E%3Crect x='12' y='14.5' width='8' height='3' fill='%23111113'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://rsms.me/">
   <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
@@ -46,7 +50,7 @@
       <div class="stage">
         <div class="tile play">
           <div class="card editor">
-            <textarea id="play-input" rows="3" spellcheck="false" aria-label="Text to tokenize"></textarea>
+            <textarea id="play-input" rows="1" placeholder="Type or paste anything" spellcheck="false" aria-label="Text to tokenize"></textarea>
             <div class="editor-foot">
               <div class="samples" role="group" aria-label="Examples">
                 <button type="button" class="chip" data-sample="prose">Prose</button>

@@ -19,6 +19,7 @@ export class TokenCallout {
     this.dot = this.root.querySelector(".co-dot");
     this.line = this.root.querySelector(".co-line");
     this.card = this.root.querySelector(".co-card");
+    this.editor = wrap.closest(".play").querySelector(".editor");
     this.visible = false;
   }
 
@@ -46,8 +47,12 @@ export class TokenCallout {
     const cardW = this.card.offsetWidth;
     const cardH = this.card.offsetHeight;
 
+    // Flip above only when the card clears the editor; covering what someone
+    // is typing is worse than hanging over the stats for a moment.
     const roomBelow = innerHeight - r.bottom - LINE;
-    const above = roomBelow < cardH + 16 && r.top - LINE - cardH > 110;
+    const editorBottom = this.editor.getBoundingClientRect().bottom;
+    const fitsAbove = r.top - LINE - cardH > Math.max(110, editorBottom + 12);
+    const above = roomBelow < cardH + 16 && fitsAbove;
     const edge = above ? y : y + r.height;
     const cardX = Math.max(0, Math.min(cx - cardW / 2, box.width - cardW));
     const cardY = above ? edge - LINE - cardH : edge + LINE;
