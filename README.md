@@ -60,8 +60,8 @@ exactly the merges of the naive one (the tests check this on random corpora).
 The merge loop keeps every adjacent pair in a heap keyed by (rank, position)
 and the parts in a linked list, so a chunk of n bytes costs O(n log n) instead
 of the O(n²) of rescanning all pairs after each merge. That matters for long
-runs without spaces: 50,000 random letters encode in 0.13 s instead of
-16.5 s. The position breaks ties, so equal pairs still merge leftmost first.
+runs without spaces: 50,000 random letters encode in 0.03 s instead of
+17.7 s. The position breaks ties, so equal pairs still merge leftmost first.
 
 ### Matching tiktoken
 
