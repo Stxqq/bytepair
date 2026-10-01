@@ -69,12 +69,14 @@ function placeIndicator() {
   if (!link) return;
   indicator.style.width = `${link.offsetWidth}px`;
   indicator.style.transform = `translateX(${link.offsetLeft - 7}px)`;
-  // no glide on the very first placement
-  requestAnimationFrame(() => pill.classList.add("ready"));
 }
 
 addEventListener("resize", placeIndicator);
-document.fonts?.ready.then(placeIndicator);
+// Inter changes the label widths once it loads; only glide after that
+document.fonts.ready.then(() => {
+  placeIndicator();
+  requestAnimationFrame(() => pill.classList.add("ready"));
+});
 
 addEventListener("hashchange", () => show(location.hash.slice(1)));
 show(location.hash.slice(1));
