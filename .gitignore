@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+.DS_Store
+node_modules/
+
+# trained models and downloaded corpora
+models/
+benchmarks/.cache/
