@@ -1,0 +1,67 @@
+{
+  "machine": {
+    "cpu": "Apple M4 Pro",
+    "python": "3.14.3",
+    "os": "Darwin 27.0.0"
+  },
+  "corpus": {
+    "books": [
+      "Pride and Prejudice (Gutenberg #1342)",
+      "Moby Dick (Gutenberg #2701)",
+      "The Adventures of Sherlock Holmes (Gutenberg #1661)",
+      "Frankenstein (Gutenberg #84)",
+      "A Tale of Two Cities (Gutenberg #98)",
+      "Dracula (Gutenberg #345)"
+    ],
+    "bytes": 4596330,
+    "sha256": "48a4b88020c0ac521f4254b1f7260d2a9d47d419e94fbfc492dc47fefb97fd31",
+    "split": "gpt4"
+  },
+  "training": [
+    {
+      "trainer": "naive",
+      "vocab_size": 512,
+      "seconds": 175.599
+    },
+    {
+      "trainer": "incremental",
+      "vocab_size": 512,
+      "seconds": 0.342
+    },
+    {
+      "trainer": "incremental",
+      "vocab_size": 1280,
+      "seconds": 0.655
+    },
+    {
+      "trainer": "incremental",
+      "vocab_size": 4352,
+      "seconds": 0.995
+    },
+    {
+      "trainer": "incremental",
+      "vocab_size": 16640,
+      "seconds": 1.126
+    },
+    {
+      "trainer": "incremental",
+      "vocab_size": 33024,
+      "seconds": 1.43
+    },
+    {
+      "trainer": "RegexTokenizer.train, split included",
+      "vocab_size": 33024,
+      "seconds": 1.472
+    }
+  ],
+  "speedup_at_equal_vocab": 513.3,
+  "encoding": {
+    "tokens": 1114325,
+    "bytes_per_token": 4.125,
+    "gpt4_tokenizer_load_seconds": 0.649,
+    "bytepair_mb_per_s_cold_cache": 5.11,
+    "bytepair_mb_per_s_warm_cache": 10.22,
+    "tiktoken_mb_per_s": 16.56,
+    "identical_to_tiktoken": true
+  }
+}
