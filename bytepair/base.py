@@ -5,12 +5,17 @@ from __future__ import annotations
 
 import unicodedata
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Collection, Iterable
+from typing import Literal
+
+import regex
 
 from .pairs import Pair, merge_pair
 from .train import OnMerge, train_bpe
 
 _NO_MERGE = float("inf")
+
+AllowedSpecial = Literal["all", "none", "none_raise"] | Collection[str]
 
 
 class Tokenizer:
@@ -28,6 +33,7 @@ class Tokenizer:
         # Raw byte -> token id. The identity for anything trained here; GPT-4
         # numbers its byte tokens in a different order.
         self.byte_ids: list[int] = list(range(256))
+        self.special_tokens: dict[str, int] = {}
         self._refresh()
 
     def split(self, text: str) -> list[str]:
@@ -36,7 +42,12 @@ class Tokenizer:
 
     @property
     def vocab_size(self) -> int:
-        return len(self.vocab)
+        return len(self.vocab) + len(self.special_tokens)
+
+    def register_special_tokens(self, tokens: dict[str, int]) -> None:
+        """Add special tokens such as ``{"<|endoftext|>": 100257}``."""
+        self.special_tokens.update(tokens)
+        self._refresh()
 
     def train(
         self, text: str, vocab_size: int, on_merge: OnMerge | None = None
@@ -54,7 +65,33 @@ class Tokenizer:
         self.merges = {pair: 256 + i for i, pair in enumerate(merges)}
         self._refresh()
 
-    def encode(self, text: str) -> list[int]:
+    def encode(
+        self, text: str, allowed_special: AllowedSpecial = "none_raise"
+    ) -> list[int]:
+        """Encode text to token ids.
+
+        ``allowed_special`` decides what happens to special tokens that appear
+        in the text, with the same rules as tiktoken: ``"all"`` turns each into
+        its special id, a set of names allows only those, ``"none"`` encodes
+        them as ordinary text and ``"none_raise"`` (the default) refuses to
+        encode text that contains any of them.
+        """
+        allowed = self._allowed_special(allowed_special, text)
+        if not allowed:
+            return self.encode_ordinary(text)
+        names = sorted(allowed, key=len, reverse=True)
+        parts = regex.split("(" + "|".join(map(regex.escape, names)) + ")", text)
+        ids: list[int] = []
+        for i, part in enumerate(parts):
+            # re.split with one capture group alternates text, special, text...
+            if i % 2:
+                ids.append(allowed[part])
+            else:
+                ids.extend(self.encode_ordinary(part))
+        return ids
+
+    def encode_ordinary(self, text: str) -> list[int]:
+        """Encode text, treating special token strings as plain text."""
         ids: list[int] = []
         for chunk in self.split(text):
             ids.extend(self._encode_chunk(chunk))
@@ -62,13 +99,39 @@ class Tokenizer:
 
     def decode_bytes(self, ids: Iterable[int]) -> bytes:
         try:
-            return b"".join(self.vocab[i] for i in ids)
+            return b"".join(self._id_to_bytes[i] for i in ids)
         except KeyError as err:
             raise ValueError(f"unknown token id {err.args[0]}") from None
 
     def decode(self, ids: Iterable[int], errors: str = "replace") -> str:
         """Decode ids to text. Partial UTF-8 sequences become U+FFFD by default."""
         return self.decode_bytes(ids).decode("utf-8", errors=errors)
+
+    def _allowed_special(self, allowed_special, text) -> dict[str, int]:
+        if allowed_special == "all":
+            return self.special_tokens
+        if allowed_special == "none":
+            return {}
+        if allowed_special == "none_raise":
+            allowed = set()
+        elif isinstance(allowed_special, str):
+            raise ValueError(
+                f"allowed_special must be 'all', 'none', 'none_raise' or a set "
+                f"of names, got {allowed_special!r}"
+            )
+        else:
+            allowed = set(allowed_special)
+            unknown = allowed - self.special_tokens.keys()
+            if unknown:
+                raise ValueError(f"unknown special tokens: {sorted(unknown)}")
+        for name in self.special_tokens.keys() - allowed:
+            if name in text:
+                raise ValueError(
+                    f"text contains the special token {name!r}. Pass "
+                    f"allowed_special={{{name!r}}} or 'all' to encode it as a "
+                    f"special token, or 'none' to encode it as plain text."
+                )
+        return {name: self.special_tokens[name] for name in allowed}
 
     def _encode_chunk(self, chunk: str) -> list[int]:
         ids = self._cache.get(chunk)
@@ -96,7 +159,17 @@ class Tokenizer:
         vocab = {token: bytes([b]) for b, token in enumerate(self.byte_ids)}
         for (a, b), new_id in self.merges.items():
             vocab[new_id] = vocab[a] + vocab[b]
+        for name, token_id in self.special_tokens.items():
+            if token_id in vocab:
+                raise ValueError(
+                    f"special token {name!r} reuses id {token_id}, "
+                    f"which is already the regular token {vocab[token_id]!r}"
+                )
         self.vocab: dict[int, bytes] = vocab
+        self._id_to_bytes = vocab | {
+            token_id: name.encode("utf-8")
+            for name, token_id in self.special_tokens.items()
+        }
         self._cache: dict[str, list[int]] = {}
 
 
