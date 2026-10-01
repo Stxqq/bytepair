@@ -42,7 +42,6 @@ export function mountPlayground(section, encoderReady) {
   };
 
   function render() {
-    pending = 0;
     if (!encoder) return;
     const text = input.value;
     tokens = encoder.tokenize(text);
@@ -85,9 +84,12 @@ export function mountPlayground(section, encoderReady) {
     stats.ratio.set(tokens.length ? chars / tokens.length : 0);
   }
 
+  // Short text re-renders on the next frame. Past a few thousand characters a
+  // pass takes long enough that typing would queue them up, so wait for a pause.
   const schedule = () => {
     fit();
-    if (!pending) pending = requestAnimationFrame(render);
+    clearTimeout(pending);
+    pending = setTimeout(render, input.value.length > 4000 ? 120 : 0);
   };
 
   function setActive(i) {

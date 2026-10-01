@@ -47,6 +47,8 @@ CASES = [
 
 
 def random_text(rng: random.Random) -> str:
+    # Wider than the pytest corpus: C1 controls, general punctuation and the FE
+    # block are where JavaScript's \s and tiktoken's regex disagree.
     blocks = [
         (0x20, 0x7E),
         (0x00, 0x1F),
@@ -83,6 +85,9 @@ def main() -> None:
         alice[:30_000],
         (ROOT / "README.md").read_text(encoding="utf-8"),
         *(random_text(rng) for _ in range(300)),
+        # single chunks long enough for the encoder's heap path
+        "".join(rng.choice("abcdefghijklmnopqrstuvwxyzAB") for _ in range(3_000)),
+        "".join(chr(rng.randint(0x4E00, 0x4FFF)) for _ in range(1_000)),
     ]
     encode = [{"text": t, "ids": enc.encode(t, allowed_special="all")} for t in texts]
 
