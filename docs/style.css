@@ -219,11 +219,12 @@ main { min-height: 100vh; }
 }
 .tok.special { background: #111; color: #fff; font-family: var(--mono); font-size: .8em; padding: 6px 7px; }
 .tokens.ids .tok { font-family: var(--mono); font-size: .82em; padding: 6px 6px; font-variant-numeric: tabular-nums; }
+.tok.byte { background: #fff; color: #6b6b73; box-shadow: inset 0 0 0 1px var(--hairline); }
 .tokens.has-hot .tok { opacity: .45; }
 .tokens.has-hot .tok.hot { opacity: 1; box-shadow: 0 0 0 1px rgba(17, 17, 19, .55); }
 
-/* ————— keyline callout ————— */
-.callout { position: absolute; inset: 0; pointer-events: none; }
+/* keyline callout */
+.callout { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
 .callout > * {
   position: absolute; left: 0; top: 0;
   opacity: 0;
@@ -311,11 +312,22 @@ main { min-height: 100vh; }
 }
 .stats dd span { margin-left: 4px; font-size: 14px; color: var(--gray); }
 
-/* ————— train ————— */
+/* train */
 .train { padding: 28px; }
 .train-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 28px; }
-.corpus textarea { height: 300px; font-size: 14px; line-height: 1.6; color: #45454c; }
-.vocab { display: flex; flex-direction: column; min-height: 0; }
+/* Gutenberg lines are hard-wrapped at 70 columns; soft-wrapping them again
+   leaves one-word lines, so they run off the edge and fade out instead. */
+.corpus textarea {
+  height: 240px;
+  font-size: 13.5px; line-height: 1.6; color: #45454c;
+  white-space: pre; overflow-x: hidden;
+  -webkit-mask-image: linear-gradient(to right, #000 88%, transparent), linear-gradient(#000 80%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, #000 88%, transparent), linear-gradient(#000 80%, transparent);
+  mask-composite: intersect;
+}
+.corpus textarea:focus { -webkit-mask-image: none; mask-image: none; overflow-x: auto; }
+.vocab { position: relative; display: flex; flex-direction: column; min-height: 0; }
 .vocab-head {
   display: flex; justify-content: space-between; align-items: baseline;
   padding: 2px 2px 10px;
@@ -323,7 +335,7 @@ main { min-height: 100vh; }
 }
 .vocab-list {
   list-style: none; padding: 0;
-  height: 340px;
+  height: 280px;
   overflow-y: auto; overflow-x: hidden;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -331,7 +343,15 @@ main { min-height: 100vh; }
   mask-image: linear-gradient(#000 78%, transparent);
 }
 .vocab-list::-webkit-scrollbar { display: none; }
-.vocab-empty { margin-top: 14px; font-size: 13px; color: var(--gray); }
+/* before training: hairline rows waiting to be filled, the message in the first */
+.vocab-list:empty {
+  background: repeating-linear-gradient(transparent 0 37px, var(--hairline) 37px 38px);
+}
+.vocab-empty {
+  position: absolute; top: 37px; left: 2px; right: 2px;
+  height: 38px; display: flex; align-items: center;
+  font-size: 13px; color: var(--gray);
+}
 .vocab-empty[hidden] { display: none; }
 .merge {
   display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 8px;
@@ -558,17 +578,16 @@ input[type="range"]::-moz-range-thumb {
 }
 a.f-value:hover { color: var(--ink); }
 
-/* ————— small screens ————— */
+/* narrow screens */
 @media (max-width: 760px) {
   .train-grid { grid-template-columns: 1fr; }
   .corpus textarea { height: 180px; }
-  .vocab-list { height: 280px; }
+  .vocab-list { height: 228px; }
   .below { flex-direction: column; gap: 22px; }
   .stats { gap: 26px; flex-wrap: wrap; }
 }
 @media (max-width: 560px) {
-  .pill-btn { width: 96px; font-size: 13px; }
-  .pill-ind { width: 96px; transform: translateX(calc(var(--at, 0) * 96px)); }
+  .pill-btn { padding: 0 16px; font-size: 13px; }
   .intro { padding: 140px 24px 56px; }
   .stage { width: calc(100% - 32px); }
   .play, .train { padding: 16px; }

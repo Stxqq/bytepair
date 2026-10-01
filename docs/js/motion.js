@@ -1,4 +1,4 @@
-// The site's motion vocabulary: one spring, one lerp, one FLIP.
+// Spring easing, a spring-driven FLIP for reflowing chips, and eased number counters.
 export const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
 // stiffness 420, damping 26, mass 0.85: settles in about half a second with a
@@ -41,7 +41,9 @@ export function springTo(el, keyframes, options = {}) {
  * restarting from rest. Used where the layout changes every frame.
  *
  * Elements that wrapped onto another line fade in place instead: a token
- * flying 800px across a paragraph reads as noise, not as reflow.
+ * flying 800px across a paragraph reads as noise, not as reflow. With quiet
+ * set they just appear, for when several merges land in one frame and the
+ * fades would only blink.
  */
 export class SpringLayout {
   constructor({ stiffness = 420, damping = 26, mass = 0.85 } = {}) {
@@ -53,7 +55,7 @@ export class SpringLayout {
     this.last = 0;
   }
 
-  update(elements, mutate) {
+  update(elements, mutate, { quiet = false } = {}) {
     const before = new Map();
     for (const el of elements) before.set(el, el.getBoundingClientRect());
     mutate();
@@ -67,7 +69,7 @@ export class SpringLayout {
       const now = el.getBoundingClientRect();
       if (Math.abs(old.top - now.top) > now.height / 2) {
         if (state) this.settle(el);
-        el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 350, easing: "ease-out" });
+        if (!quiet) el.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 260, easing: "cubic-bezier(.22, 1, .36, 1)" });
         continue;
       }
       const x = old.left - now.left + (state?.x ?? 0);
@@ -141,6 +143,13 @@ export class Counter {
     }
     counters.add(this);
     if (!frame) frame = requestAnimationFrame(tick);
+  }
+
+  /** Stop counting and show a placeholder, such as a dash for "no value". */
+  clear(placeholder) {
+    counters.delete(this);
+    this.current = this.target = 0;
+    this.el.textContent = placeholder;
   }
 
   render() {

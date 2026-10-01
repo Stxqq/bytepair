@@ -40,6 +40,7 @@ export function mountTrainer(section) {
   let clock = 0;
   let last = 0;
   let frame = 0;
+  let summary = "";
   let sampleChips = new Map();
   const reflow = new SpringLayout();
 
@@ -70,6 +71,12 @@ export function mountTrainer(section) {
     last = performance.now();
     skip.hidden = false;
     caption.textContent = "Training…";
+    // the sample re-segmenting is the payoff, so bring it into view
+    const tile = section.querySelector(".tile.train");
+    scrollTo({
+      top: tile.getBoundingClientRect().top + scrollY - 110,
+      behavior: reducedMotion.matches ? "instant" : "smooth",
+    });
 
     worker = new Worker(new URL("./train-worker.js", import.meta.url), { type: "module" });
     worker.addEventListener("message", ({ data }) => {
@@ -81,12 +88,15 @@ export function mountTrainer(section) {
         }
       } else {
         finished = true;
-        caption.textContent =
+        summary =
           `${fmt.format(merges.length)} merges from ${fmt.format(data.chunks)} distinct chunks ` +
           `in ${fmt.format(Math.max(1, Math.round(data.ms)))} ms`;
+        caption.textContent = `Replaying ${fmt.format(merges.length)} merges`;
       }
     });
     worker.addEventListener("error", (event) => {
+      cancelAnimationFrame(frame);
+      frame = 0;
       caption.textContent = `Training failed: ${event.message}`;
       skip.hidden = true;
     });
@@ -105,6 +115,7 @@ export function mountTrainer(section) {
     }
     if (shown > from) reveal(from, shown);
     if (finished && shown === merges.length) {
+      caption.textContent = summary;
       skip.hidden = true;
       frame = 0;
       return;
@@ -138,7 +149,7 @@ export function mountTrainer(section) {
         );
       });
     }
-    drawSample(!instant);
+    drawSample(!instant, to - from > 1);
     stats.vocab.set(256 + to);
   }
 
@@ -170,7 +181,7 @@ export function mountTrainer(section) {
 
   // Chips are keyed by the byte offset they start at. A merge keeps the left
   // chip, grows it over its neighbour and lets everything after it slide in.
-  function drawSample(animate) {
+  function drawSample(animate, quiet = false) {
     const text = sampleInput.value;
     const pieces = [];
     let at = 0;
@@ -194,7 +205,8 @@ export function mountTrainer(section) {
         chip.replaceChildren();
         grown.push(chip);
       }
-      chip.className = `tok c${id % 6}`;
+      // plain bytes stay neutral so the merged tokens are what lights up
+      chip.className = id < 256 ? "tok byte" : `tok c${id % 6}`;
       chip.dataset.id = id;
       chip.title = `${id}`;
       drawToken(chip, vocab[id]);
@@ -203,7 +215,7 @@ export function mountTrainer(section) {
     });
 
     const mutate = () => sampleOut.replaceChildren(...chips);
-    if (animate) reflow.update([...sampleChips.values()], mutate);
+    if (animate) reflow.update([...sampleChips.values()], mutate, { quiet });
     else mutate();
     sampleChips = next;
     if (animate) {
@@ -217,9 +229,16 @@ export function mountTrainer(section) {
 
   async function loadAlice() {
     if (alice === null) {
-      const book = await fetch(new URL("../data/alice.txt", import.meta.url)).then((r) => r.text());
-      // skip the title page and contents, start at the first chapter
-      alice = book.slice(Math.max(0, book.search(/^CHAPTER I\.$/m)));
+      try {
+        const response = await fetch(new URL("../data/alice.txt", import.meta.url));
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const book = await response.text();
+        // skip the title page and contents, start at the first chapter
+        alice = book.slice(Math.max(0, book.search(/^CHAPTER I\.$/m)));
+      } catch (error) {
+        caption.textContent = `Could not load Alice in Wonderland: ${error.message}. Paste any text instead.`;
+        return;
+      }
     }
     corpus.value = alice;
     const opening = alice.indexOf("Alice was beginning");
