@@ -141,6 +141,30 @@ GPT-4's vocabulary:
   cl100k_base  whole book: 4.09 bytes/token
 ```
 
+## Playground
+
+[stxqq.github.io/bytepair](https://stxqq.github.io/bytepair/) runs the same
+tokenizer in the browser, with no server behind it:
+
+- **GPT-4** encodes whatever you type with cl100k_base. Hovering a token shows
+  its id, its bytes, its merge rank and the tree of merges that built it.
+- **Train** runs the incremental trainer in a Web Worker on any text you paste
+  and replays the merges one by one while a sample sentence re-segments. On
+  Alice, 512 merges take 20 to 30 ms in Chrome.
+- **How it works** walks through split, bytes, merges and ids, drawn from the
+  live encoder.
+
+The page is plain HTML and ES modules in [`docs/`](docs). The 100,256 ranks
+ship as one length-prefixed byte string, 456 KB gzipped
+(`python scripts/build_web_ranks.py`), and are inflated with
+`DecompressionStream`. JavaScript has no possessive quantifiers and a different
+idea of `\s` than tiktoken, so the split pattern is rewritten by hand in
+[`docs/js/split.js`](docs/js/split.js). `node scripts/check_web.mjs` holds the
+port to the Python side in CI: 325 texts (edge cases, Alice, this README and
+300 random multilingual strings, 48,918 tokens) must give exactly tiktoken's
+ids, and the JS trainer must learn the same 300 merges as `RegexTokenizer`.
+`python scripts/make_web_fixture.py` regenerates the fixture.
+
 ## Results
 
 Measured with `python benchmarks/run.py` on an Apple M4 Pro, Python 3.14, using
@@ -178,6 +202,8 @@ bytepair/
   modelfile.py    the .model text format
   cli.py          bytepair train | encode | decode | inspect
 benchmarks/       run.py and results.json
+docs/             the playground: cl100k encoder, trainer and UI in plain JS
+scripts/          packs the ranks for the web, checks the JS port against Python
 examples/         alice.txt (public domain) and train_alice.py
 tests/            pytest suite, including a tiktoken comparison
 ```
