@@ -1,4 +1,4 @@
-"""The two primitives every BPE implementation is built on."""
+"""count_pairs and merge_pair, shared by the reference trainer and the tests."""
 
 from __future__ import annotations
 
@@ -7,11 +7,13 @@ from collections.abc import Sequence
 Pair = tuple[int, int]
 
 
-def count_pairs(ids: Sequence[int], counts: dict[Pair, int] | None = None, weight=1):
+def count_pairs(
+    ids: Sequence[int], counts: dict[Pair, int] | None = None
+) -> dict[Pair, int]:
     """Count adjacent pairs in ``ids``, adding into ``counts`` if given."""
     counts = {} if counts is None else counts
     for pair in zip(ids, ids[1:]):
-        counts[pair] = counts.get(pair, 0) + weight
+        counts[pair] = counts.get(pair, 0) + 1
     return counts
 
 

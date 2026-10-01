@@ -42,6 +42,8 @@ def train_bpe(
             weights.append(freq)
 
     # Lazy max-heap: an entry is valid only while its count matches the stats.
+    # On equal counts heapq yields the smaller pair, the same tie-break as
+    # train_bpe_naive, which is what makes training deterministic.
     heap = [(-count, pair) for pair, count in stats.counts.items()]
     heapq.heapify(heap)
 
@@ -122,7 +124,11 @@ class _PairStats:
             self.where[pair].add(index)
 
     def flush(self):
-        """Yield the pairs whose count changed since the last flush."""
+        """Yield (pair, count) for every pair touched since the last flush.
+
+        Pairs that dropped to zero are removed from ``counts`` here, so stale
+        heap entries for them never validate.
+        """
         for pair in self.touched:
             count = self.counts[pair]
             if count:

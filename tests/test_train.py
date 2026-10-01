@@ -17,11 +17,11 @@ def test_merge_pair_is_left_to_right():
     assert merge_pair([1], (1, 2), 7) == [1]
 
 
-def test_count_pairs_accumulates_with_weight():
+def test_count_pairs_accumulates():
     counts = count_pairs([1, 2, 1, 2])
     assert counts == {(1, 2): 2, (2, 1): 1}
-    count_pairs([1, 2], counts, weight=3)
-    assert counts[(1, 2)] == 5
+    count_pairs([1, 2], counts)
+    assert counts[(1, 2)] == 3
 
 
 def test_wikipedia_example():
