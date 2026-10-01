@@ -1,20 +1,23 @@
 # bytepair
 
-A byte-level BPE tokenizer written from scratch in Python, small enough to read in an evening and exact enough to reproduce GPT-4's `cl100k_base` token for token.
+A byte-level BPE tokenizer in plain Python, under 1,000 lines, that reproduces GPT-4's `cl100k_base` ids exactly.
+
+<p align="center">
+  <img src=".github/assets/hero.gif" width="880" alt="Hovering tokens in the GPT-4 playground, then training a vocabulary on Alice in Wonderland">
+</p>
 
 <p align="center">
   <a href="https://github.com/Stxqq/bytepair/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/Stxqq/bytepair/actions/workflows/ci.yml/badge.svg"></a>
   <a href="https://stxqq.github.io/bytepair/"><img alt="Live demo" src="https://img.shields.io/badge/demo-live-111113?style=flat&labelColor=111113"></a>
   <a href="LICENSE"><img alt="License MIT" src="https://img.shields.io/badge/license-MIT-2563eb?style=flat&labelColor=111113"></a>
-  <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%E2%80%933.13-BAE6FD?style=flat&labelColor=111113">
+  <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%E2%80%933.14-BAE6FD?style=flat&labelColor=111113">
   <img alt="tiktoken compatible" src="https://img.shields.io/badge/cl100k__base-tiktoken--identical-BBF7D0?style=flat&labelColor=111113">
 </p>
 
 ## What it is
 
-Language models never see text. They see integers, and the tokenizer decides
-which integers. `bytepair` is a complete implementation of the scheme GPT-2 and
-GPT-4 use:
+`bytepair` implements the byte-level BPE that GPT-2 and GPT-4 use, as three
+classes:
 
 - `BasicTokenizer` runs BPE over the raw byte stream.
 - `RegexTokenizer` first splits text with the GPT-2 or GPT-4 pattern, so merges
@@ -23,8 +26,8 @@ GPT-4 use:
   published ranks and produces the same ids as `tiktoken`.
 
 Training keeps pair counts up to date across merges instead of recounting the
-corpus, which makes it about 500x faster than the textbook loop on a few MB of
-text. The package is under 900 lines including the CLI, with one dependency
+corpus, which makes it over 500x faster than the textbook loop on a few MB of
+text. The package is under 1,000 lines including the CLI, with one dependency
 (`regex`).
 
 ## How it works
@@ -37,12 +40,14 @@ text. The package is under 900 lines including the CLI, with one dependency
        |  utf-8
        v
  [72 101 108 108 111] [32 119 ...] [33]   256 byte tokens
-       |  merge loop: repeatedly apply the lowest-ranked pair present
+       |  merge loop: apply the lowest-ranked pair present, until none is left
        v
  [9906] [1917] [0]                        ids, identical to tiktoken
 ```
 
-**Training** counts every adjacent pair, merges the most frequent one into a new
+### Training
+
+Training counts every adjacent pair, merges the most frequent one into a new
 token and repeats. The naive version recounts the whole corpus after each merge.
 `bytepair` deduplicates chunks first (4.6 MB of novels is 1,019,184 chunks but
 only 42,339 distinct ones), weights them by frequency and keeps an index from
@@ -52,7 +57,17 @@ away and `(x,ab) (ab,y)` appear. A lazy max-heap picks the next pair. Ties go to
 the smallest pair, so training is deterministic and the fast trainer produces
 exactly the merges of the naive one (the tests check this on random corpora).
 
-**GPT-4 compatibility.** `tiktoken` ships `cl100k_base` as `token bytes -> rank`
+### Encoding
+
+The merge loop keeps every adjacent pair in a heap keyed by (rank, position)
+and the parts in a linked list, so a chunk of n bytes costs O(n log n) instead
+of the O(n²) of rescanning all pairs after each merge. That matters for long
+runs without spaces: 50,000 random letters encode in 0.13 s instead of
+16.5 s. The position breaks ties, so equal pairs still merge leftmost first.
+
+### Matching tiktoken
+
+`tiktoken` ships `cl100k_base` as `token bytes -> rank`
 without saying which two tokens each one was merged from. Running BPE on a
 token's own bytes, allowing only merges ranked below it, stops at exactly the
 two halves that formed it, which recovers all 100,000 merges in about half a
@@ -63,7 +78,7 @@ tokenizer carries a `byte_ids` table (the identity for anything trained here).
 
 ```bash
 git clone https://github.com/Stxqq/bytepair && cd bytepair
-python -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[tiktoken]"       # tiktoken is optional, see below
 ```
 
@@ -77,7 +92,7 @@ Without `tiktoken`, the cl100k ranks are downloaded once from
 from bytepair import GPT4Tokenizer, RegexTokenizer, load
 
 tok = RegexTokenizer("gpt4")
-tok.train(open("examples/alice.txt").read(), vocab_size=1024)
+tok.train(open("examples/alice.txt", encoding="utf-8").read(), vocab_size=1024)
 tok.save("models/alice")  # alice.model + alice.vocab
 
 ids = tok.encode("Would you tell me, please, which way I ought to go from here?")
@@ -108,10 +123,10 @@ $ bytepair encode "hello world"
 $ bytepair decode 15339 1917
 hello world
 
-$ bytepair inspect --color never "The tokenizer is a separate stage of the LLM pipeline 🙂"
-The| tokenizer| is| a| separate| stage| of| the| L|LM| pipeline| 🙂
-791 47058 374 264 8821 6566 315 279 445 11237 15660 28584
-55 chars, 58 bytes, 12 tokens, 4.83 bytes/token
+$ bytepair inspect --color never "Curiouser and curiouser! cried Alice 🙂"
+Cur|ious|er| and| curious|er|!| cried| Alice| 🙂
+17119 1245 261 323 22999 261 0 39169 30505 28584
+38 chars, 41 bytes, 10 tokens, 4.10 bytes/token
 ```
 
 In a terminal, `inspect` draws each token on a pastel background with its id
@@ -144,15 +159,18 @@ GPT-4's vocabulary:
 ## Playground
 
 [stxqq.github.io/bytepair](https://stxqq.github.io/bytepair/) runs the same
-tokenizer in the browser, with no server behind it:
+tokenizer in the browser, with no server behind it. The GPT-4 tab encodes
+whatever you type with cl100k_base; hovering a token shows its id, bytes, merge
+rank and the tree of merges that built it. The Train tab runs the incremental
+trainer in a Web Worker on any text you paste and replays the merges one by one
+while a sample sentence re-segments (512 merges on Alice take 20 to 30 ms in
+Chrome). How it works walks through split, bytes, merges and ids, drawn from
+the live encoder.
 
-- **GPT-4** encodes whatever you type with cl100k_base. Hovering a token shows
-  its id, its bytes, its merge rank and the tree of merges that built it.
-- **Train** runs the incremental trainer in a Web Worker on any text you paste
-  and replays the merges one by one while a sample sentence re-segments. On
-  Alice, 512 merges take 20 to 30 ms in Chrome.
-- **How it works** walks through split, bytes, merges and ids, drawn from the
-  live encoder.
+<p align="center">
+  <img src=".github/assets/playground.png" width="49%" alt="The token ' separate' with its id, bytes, rank and merge tree">
+  <img src=".github/assets/merges.png" width="34%" alt="Spec sheet of the merges that turn ' tokenizing' into two tokens">
+</p>
 
 The page is plain HTML and ES modules in [`docs/`](docs). The 100,256 ranks
 ship as one length-prefixed byte string, 456 KB gzipped
@@ -160,40 +178,44 @@ ship as one length-prefixed byte string, 456 KB gzipped
 `DecompressionStream`. JavaScript has no possessive quantifiers and a different
 idea of `\s` than tiktoken, so the split pattern is rewritten by hand in
 [`docs/js/split.js`](docs/js/split.js). `node scripts/check_web.mjs` holds the
-port to the Python side in CI: 325 texts (edge cases, Alice, this README and
-300 random multilingual strings, 48,918 tokens) must give exactly tiktoken's
-ids, and the JS trainer must learn the same 300 merges as `RegexTokenizer`.
+port to the Python side in CI: 327 texts (edge cases, Alice, this README, 300
+random multilingual strings and two long runs without spaces, 52,985 tokens)
+must give exactly tiktoken's ids, and the JS trainer must learn the same 300
+merges as `RegexTokenizer`.
 `python scripts/make_web_fixture.py` regenerates the fixture.
 
 ## Results
 
 Measured with `python benchmarks/run.py` on an Apple M4 Pro, Python 3.14, using
-six Project Gutenberg novels (4.60 MB, GPT-4 split). Raw numbers are in
+six Project Gutenberg novels (4.60 MB, GPT-4 split). Each time is the best of
+five runs with the garbage collector off, except the naive trainer, which runs
+once. Single runs of the fast trainer swing noticeably on a busy machine, so
+read the sub-second numbers as rough. Raw numbers are in
 [`benchmarks/results.json`](benchmarks/results.json).
 
 | trainer | vocab size | time |
 |---|---:|---:|
-| naive (recount every merge) | 512 | 175.60 s |
-| incremental | 512 | 0.34 s |
-| incremental | 1,280 | 0.65 s |
-| incremental | 4,352 | 0.99 s |
-| incremental | 16,640 | 1.13 s |
-| incremental | 33,024 | 1.43 s |
+| naive (recount every merge) | 512 | 178 s |
+| incremental | 512 | 0.31 s |
+| incremental | 1,280 | 0.49 s |
+| incremental | 4,352 | 0.49 s |
+| incremental | 16,640 | 0.65 s |
+| incremental | 33,024 | 0.86 s |
 
-At the same vocabulary the incremental trainer is 513x faster and learns
+At the same vocabulary the incremental trainer is about 570x faster and learns
 identical merges. Training a 33k vocabulary end to end, regex split included,
-takes 1.47 s.
+takes 1.4 s.
 
 Encoding the same corpus with `GPT4Tokenizer` gives 1,114,325 tokens
-(4.13 bytes/token), identical to `tiktoken`. Pure Python runs at 5.1 MB/s with a
-cold chunk cache and 10.2 MB/s warm, against 16.6 MB/s for tiktoken's Rust core
-in the same run.
+(4.13 bytes/token), identical to `tiktoken`. Pure Python runs at 6.6 MB/s with a
+cold chunk cache and 13 MB/s warm, against 25 MB/s for tiktoken's Rust core in
+the same run.
 
 ## Project layout
 
 ```
 bytepair/
-  pairs.py        count_pairs and merge_pair, the two BPE primitives
+  pairs.py        count_pairs and merge_pair
   train.py        incremental trainer and the naive reference
   base.py         Tokenizer: vocab, encode/decode, special tokens, save
   tokenizers.py   BasicTokenizer, RegexTokenizer, load
