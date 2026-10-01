@@ -47,3 +47,13 @@ jobs:
       - run: pytest -q
       - name: GPT4Tokenizer from the verified download
         run: bytepair encode "hello world" | grep -qx "15339 1917"
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Playground encoder and trainer match the Python side
+        run: node scripts/check_web.mjs
