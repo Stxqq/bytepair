@@ -45,7 +45,7 @@ def test_vocab_file_shows_merge_parents(tmp_path):
     tok = BasicTokenizer()
     tok.train("aaabdaaabac", 259)
     tok.save(tmp_path / "wiki")
-    lines = (tmp_path / "wiki.vocab").read_text().splitlines()
+    lines = (tmp_path / "wiki.vocab").read_text(encoding="utf-8").splitlines()
     assert lines[10] == "    10  [\\n]"
     assert lines[256:] == [
         "   256  [a] [a] -> [aa]",
@@ -58,4 +58,19 @@ def test_rejects_other_files(tmp_path):
     path = tmp_path / "x.model"
     path.write_text("hello\n")
     with pytest.raises(ValueError, match="not a bytepair model"):
+        load(path)
+
+
+@pytest.mark.parametrize(
+    "body, problem",
+    [
+        ("pattern none\nbytes identity\nspecial 0\nmerges 2\n97 98\n", "truncated"),
+        ("pattern none\nbytes identity\nspecial 1\n", "truncated"),
+        ("pattern none\nbytes identity\nspecial 0\nmerges 1\n97 256\n", "merge 0"),
+    ],
+)
+def test_rejects_broken_files(tmp_path, body, problem):
+    path = tmp_path / "broken.model"
+    path.write_text("bytepair 1\n" + body, encoding="utf-8")
+    with pytest.raises(ValueError, match=problem):
         load(path)

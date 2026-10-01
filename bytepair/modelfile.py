@@ -57,13 +57,15 @@ def parse_model(text: str) -> ModelSpec:
     special_count = int(_field(lines, "special"))
     special_tokens = {}
     for _ in range(special_count):
-        token_id, name = next(lines).split(" ", 1)
+        token_id, name = _next_line(lines).split(" ", 1)
         special_tokens[json.loads(name)] = int(token_id)
     merge_count = int(_field(lines, "merges"))
     merges = []
-    for _ in range(merge_count):
-        a, b = next(lines).split()
-        merges.append((int(a), int(b)))
+    for i in range(merge_count):
+        a, b = (int(v) for v in _next_line(lines).split())
+        if not (a < 256 + i and b < 256 + i):
+            raise ValueError(f"merge {i} uses a token that does not exist yet")
+        merges.append((a, b))
 
     return ModelSpec(
         pattern=None if pattern == "none" else json.loads(pattern),
@@ -73,8 +75,15 @@ def parse_model(text: str) -> ModelSpec:
     )
 
 
+def _next_line(lines) -> str:
+    line = next(lines, None)
+    if line is None:
+        raise ValueError("truncated model file")
+    return line
+
+
 def _field(lines, key: str) -> str:
-    line = next(lines, "")
+    line = _next_line(lines)
     name, _, value = line.partition(" ")
     if name != key:
         raise ValueError(f"expected a {key!r} line, found {line!r}")

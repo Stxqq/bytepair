@@ -58,7 +58,7 @@ def corpus(alice: str) -> list[str]:
     return [
         *EDGE_CASES,
         alice[:20_000],
-        *(path.read_text() for path in sorted(source.glob("*.py"))),
+        *(path.read_text(encoding="utf-8") for path in sorted(source.glob("*.py"))),
         *(random_text(rng) for _ in range(400)),
     ]
 
