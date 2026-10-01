@@ -190,7 +190,7 @@ function trainingTile() {
       { side: "left", target: rows[3], name: "Repeat", text: "Only pairs around a merge change" },
       { side: "right", target: rows[3], name: "Result", text: `${text.length} tokens become ${end}` },
     ],
-    caption: "In Python, keeping counts up to date makes 256 merges on 4.6 MB take 0.34 s instead of 175.6 s.",
+    caption: "In Python, keeping counts up to date makes 256 merges on 4.6 MB take 0.31 s instead of 178 s.",
   });
 }
 

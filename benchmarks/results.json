@@ -21,47 +21,47 @@
     {
       "trainer": "naive",
       "vocab_size": 512,
-      "seconds": 175.599
+      "seconds": 177.762
     },
     {
       "trainer": "incremental",
       "vocab_size": 512,
-      "seconds": 0.342
+      "seconds": 0.312
     },
     {
       "trainer": "incremental",
       "vocab_size": 1280,
-      "seconds": 0.655
+      "seconds": 0.487
     },
     {
       "trainer": "incremental",
       "vocab_size": 4352,
-      "seconds": 0.995
+      "seconds": 0.491
     },
     {
       "trainer": "incremental",
       "vocab_size": 16640,
-      "seconds": 1.126
+      "seconds": 0.649
     },
     {
       "trainer": "incremental",
       "vocab_size": 33024,
-      "seconds": 1.43
+      "seconds": 0.864
     },
     {
       "trainer": "RegexTokenizer.train, split included",
       "vocab_size": 33024,
-      "seconds": 1.472
+      "seconds": 1.367
     }
   ],
-  "speedup_at_equal_vocab": 513.3,
+  "speedup_at_equal_vocab": 569.4,
   "encoding": {
     "tokens": 1114325,
     "bytes_per_token": 4.125,
-    "gpt4_tokenizer_load_seconds": 0.649,
-    "bytepair_mb_per_s_cold_cache": 5.11,
-    "bytepair_mb_per_s_warm_cache": 10.22,
-    "tiktoken_mb_per_s": 16.56,
+    "gpt4_tokenizer_load_seconds": 1.109,
+    "bytepair_mb_per_s_cold_cache": 6.61,
+    "bytepair_mb_per_s_warm_cache": 12.55,
+    "tiktoken_mb_per_s": 25.15,
     "identical_to_tiktoken": true
   }
 }

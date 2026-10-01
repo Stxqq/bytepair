@@ -1,5 +1,7 @@
 """Training and encoding benchmarks on a few MB of Project Gutenberg text.
 
+Every timing except the naive trainer's is the best of five runs.
+
     python benchmarks/run.py            # writes benchmarks/results.json
 
 The books are downloaded once into benchmarks/.cache.
@@ -7,6 +9,7 @@ The books are downloaded once into benchmarks/.cache.
 
 from __future__ import annotations
 
+import gc
 import hashlib
 import json
 import platform
@@ -22,6 +25,10 @@ from bytepair.train import train_bpe, train_bpe_naive
 
 HERE = Path(__file__).resolve().parent
 CACHE = HERE / ".cache"
+
+# what the six books hashed to when the README numbers were taken; Gutenberg
+# revises its files now and then
+CORPUS_SHA256 = "48a4b88020c0ac521f4254b1f7260d2a9d47d419e94fbfc492dc47fefb97fd31"
 
 BOOKS = {
     1342: "Pride and Prejudice",
@@ -46,10 +53,21 @@ def gutenberg_text(book_id: int) -> str:
     return text[start : text.index("*** END OF")].strip() + "\n"
 
 
-def timed(fn):
-    start = time.perf_counter()
-    value = fn()
-    return value, time.perf_counter() - start
+def timed(fn, repeat: int = 1, setup=None):
+    """Best of ``repeat`` runs, with the garbage collector off while timing."""
+    best = float("inf")
+    for _ in range(repeat):
+        if setup is not None:
+            setup()
+        gc.collect()
+        gc.disable()
+        try:
+            start = time.perf_counter()
+            value = fn()
+            best = min(best, time.perf_counter() - start)
+        finally:
+            gc.enable()
+    return value, best
 
 
 def cpu_name() -> str:
@@ -79,7 +97,7 @@ def bench_training(text: str) -> list[dict]:
         # both trainers start from the same pre-split chunks, so the
         # deduplication is part of what gets timed
         merges, seconds = timed(
-            lambda n=num_merges: train_bpe(Counter(encoded).items(), n)
+            lambda n=num_merges: train_bpe(Counter(encoded).items(), n), repeat=5
         )
         if num_merges == naive_merges:
             assert merges == reference, "incremental and naive trainers disagree"
@@ -87,7 +105,7 @@ def bench_training(text: str) -> list[dict]:
         print(f"incremental  {num_merges:>6} merges  {seconds:8.2f}s", file=sys.stderr)
 
     tok = RegexTokenizer("gpt4")
-    _, seconds = timed(lambda: tok.train(text, 256 + 32_768))
+    _, seconds = timed(lambda: tok.train(text, 256 + 32_768), repeat=5)
     rows.append(_row("RegexTokenizer.train, split included", 32_768, seconds))
     print(f"end to end   {32_768:>6} merges  {seconds:8.2f}s", file=sys.stderr)
     return rows
@@ -100,8 +118,10 @@ def _row(trainer: str, num_merges: int, seconds: float) -> dict:
 def bench_encoding(text: str) -> dict:
     size_mb = len(text.encode("utf-8")) / 1e6
     gpt4, load_s = timed(GPT4Tokenizer)
-    ids, cold_s = timed(lambda: gpt4.encode_ordinary(text))
-    _, warm_s = timed(lambda: gpt4.encode_ordinary(text))
+    ids, cold_s = timed(
+        lambda: gpt4.encode_ordinary(text), repeat=5, setup=gpt4._cache.clear
+    )
+    _, warm_s = timed(lambda: gpt4.encode_ordinary(text), repeat=5)
     result = {
         "tokens": len(ids),
         "bytes_per_token": round(len(text.encode("utf-8")) / len(ids), 3),
@@ -114,7 +134,7 @@ def bench_encoding(text: str) -> dict:
     except ImportError:
         return result
     reference = tiktoken.get_encoding("cl100k_base")
-    expected, tiktoken_s = timed(lambda: reference.encode_ordinary(text))
+    expected, tiktoken_s = timed(lambda: reference.encode_ordinary(text), repeat=5)
     assert expected == ids, "GPT4Tokenizer disagrees with tiktoken"
     result["tiktoken_mb_per_s"] = round(size_mb / tiktoken_s, 2)
     result["identical_to_tiktoken"] = True
@@ -125,6 +145,13 @@ def main() -> None:
     text = "".join(gutenberg_text(book_id) for book_id in BOOKS)
     raw = text.encode("utf-8")
     print(f"corpus: {len(raw) / 1e6:.2f} MB", file=sys.stderr)
+    sha256 = hashlib.sha256(raw).hexdigest()
+    if sha256 != CORPUS_SHA256:
+        print(
+            f"warning: corpus sha256 is {sha256}, not the one the README "
+            "numbers were measured on; a book has probably been revised",
+            file=sys.stderr,
+        )
 
     training = bench_training(text)
     naive = next(r for r in training if r["trainer"] == "naive")
@@ -142,7 +169,7 @@ def main() -> None:
         "corpus": {
             "books": [f"{title} (Gutenberg #{i})" for i, title in BOOKS.items()],
             "bytes": len(raw),
-            "sha256": hashlib.sha256(raw).hexdigest(),
+            "sha256": sha256,
             "split": "gpt4",
         },
         "training": [{**r, "seconds": round(r["seconds"], 3)} for r in training],
