@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 from bytepair import RegexTokenizer
@@ -60,3 +62,21 @@ def test_special_id_may_not_shadow_a_regular_token(tok):
 
 def test_vocab_size_includes_specials(tok):
     assert tok.vocab_size == 300 + 2
+
+
+def test_failed_registration_leaves_tokenizer_unchanged(tok):
+    before = tok.encode(f"hi{EOT}", allowed_special="all")
+    with pytest.raises(ValueError):
+        tok.register_special_tokens({"<|ok|>": 2000, "<|bad|>": 299})
+    assert set(tok.special_tokens) == {EOT, FIM}
+    assert tok.encode(f"hi{EOT}", allowed_special="all") == before
+
+
+def test_train_refuses_specials_inside_the_new_vocab(tok, alice):
+    merges, text = dict(tok.merges), alice[:2_000]
+    ids = tok.encode(text)
+    with pytest.raises(ValueError, match=re.escape(f"{EOT!r} has id 1000")):
+        tok.train(text, 1200)
+    assert tok.merges == merges
+    assert tok.decode(tok.encode(text)) == text
+    assert tok.encode(text) == ids

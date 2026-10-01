@@ -50,6 +50,7 @@ class Tokenizer:
 
     def register_special_tokens(self, tokens: dict[str, int]) -> None:
         """Add special tokens such as ``{"<|endoftext|>": 100257}``."""
+        _check_special_ids(tokens, self.vocab)
         self.special_tokens.update(tokens)
         self._refresh()
 
@@ -59,6 +60,13 @@ class Tokenizer:
         """Learn ``vocab_size - 256`` merges from ``text``, replacing any old ones."""
         if vocab_size < 256:
             raise ValueError(f"vocab_size must be at least 256, got {vocab_size}")
+        # checked up front: finding out after a long training run is no help
+        for name, token_id in self.special_tokens.items():
+            if token_id < vocab_size:
+                raise ValueError(
+                    f"special token {name!r} has id {token_id}, which training to "
+                    f"vocab_size {vocab_size} would give to a regular token"
+                )
         chunks = Counter(self.split(text))
         merges = train_bpe(
             ((chunk.encode("utf-8"), freq) for chunk, freq in chunks.items()),
@@ -228,18 +236,22 @@ class Tokenizer:
         vocab = {token: bytes([b]) for b, token in enumerate(self.byte_ids)}
         for (a, b), new_id in self.merges.items():
             vocab[new_id] = vocab[a] + vocab[b]
-        for name, token_id in self.special_tokens.items():
-            if token_id in vocab:
-                raise ValueError(
-                    f"special token {name!r} reuses id {token_id}, "
-                    f"which is already the regular token {vocab[token_id]!r}"
-                )
+        _check_special_ids(self.special_tokens, vocab)
         self.vocab: dict[int, bytes] = vocab
         self._id_to_bytes = vocab | {
             token_id: name.encode("utf-8")
             for name, token_id in self.special_tokens.items()
         }
         self._cache: dict[str, list[int]] = {}
+
+
+def _check_special_ids(special_tokens: dict[str, int], vocab: dict[int, bytes]):
+    for name, token_id in special_tokens.items():
+        if token_id in vocab:
+            raise ValueError(
+                f"special token {name!r} reuses id {token_id}, "
+                f"which is already the regular token {vocab[token_id]!r}"
+            )
 
 
 def render_token(token: bytes) -> str:
