@@ -105,4 +105,5 @@ def test_cache_does_not_change_results(trained):
 def test_render_token():
     assert render_token(b"hello") == "hello"
     assert render_token(b"\n\t") == "\\n\\t"
-    assert render_token(b"\xe2\x82") == "�"
+    assert render_token(b"\xe2\x82") == "\\xe2\\x82"
+    assert render_token("é".encode()) == "é"

@@ -209,9 +209,9 @@ class Tokenizer:
 
 
 def render_token(token: bytes) -> str:
-    """Printable form of a token: invalid UTF-8 shows as U+FFFD and control
-    characters are escaped, so every token fits on one line."""
-    text = token.decode("utf-8", errors="replace")
+    """Printable form of a token. Bytes that are not valid UTF-8 on their own
+    and control characters are escaped, so every token fits on one line."""
+    text = token.decode("utf-8", errors="backslashreplace")
     return "".join(
         repr(ch)[1:-1] if unicodedata.category(ch)[0] == "C" else ch for ch in text
     )
